@@ -61,7 +61,34 @@ public class EsTest {
             //查询数据
             //queryDate(indexName);
             //删除数据
-            deleteDate(indexName);
+            //deleteDate(indexName);
+            //查询所有数据
+            //EsQuery.matchAllQuery(client, indexName);
+            //查询_type下的所有数据
+            //EsQuery.matchQueryForType(client, indexName);
+            //模糊查询
+            //EsQuery.matchQuery(client,indexName);
+            //term查询；精确匹配
+            //注：汉字被拆分成一个字，英文的话每一个空格代表一个单词相隔
+            //EsQuery.termQuery(client, indexName);
+            //多字段精确匹配
+            //EsQuery.termsQuerys(client, indexName);
+            //范围查询
+            //EsQuery.rangeQuerys(client, indexName);
+            //EsQuery.multiMatchQuery(client, indexName);
+            //id查询
+            //EsQuery.MultiGetResponse(client, indexName);
+            //EsQuery.idsQuery(client, indexName);
+            //
+            //EsQuery.queryStringQuery(client, indexName);
+            //前缀匹配
+            //EsQuery.prefixQuery(client, indexName);
+            //通配符匹配查询
+            //EsQuery.wildcardQuery(client, indexName);
+            //模糊查询
+            //EsQuery.fuzzyQuery(client, indexName);
+            //多条件查询
+            EsQuery.multiSearchResponse(client, indexName);
 
             //关闭client
             client.close();
@@ -121,12 +148,12 @@ public class EsTest {
      */
     public static void createDate(String indexName){
         Map<String,Object> map = new HashMap<String, Object>();
-        map.put("type", "红楼梦");
-        map.put("eventCount", 3);
+        map.put("type", "明星");
+        map.put("eventCount", 1);
         map.put("eventDate", new Date()) ;
-        map.put("message", new String[]{"second","我是史湘云"});
+        map.put("message", new String[]{"first","胡歌"});
         try {
-            IndexResponse response = client.prepareIndex(indexName, "article",UUID.randomUUID().toString().replaceAll("-",""))
+            IndexResponse response = client.prepareIndex(indexName, "star",UUID.randomUUID().toString().replaceAll("-",""))
                     .setSource(map).execute().actionGet();
             System.out.println("写入数据结果=" + response.status().getStatus() + "！id=" + response.getId());
         } catch (Exception e) {
