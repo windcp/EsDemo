@@ -77,7 +77,7 @@ public class EsQuery {
         QueryBuilder queryBuilder = QueryBuilders.termQuery("type","西");
         SearchResponse response = client.prepareSearch(indexName).setQuery(queryBuilder).get();
         for (SearchHit  searchHit: response.getHits()) {
-            System.out.println(searchHit);
+            System.out.println(searchHit.getSource());
         }
     }
 

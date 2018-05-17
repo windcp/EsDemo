@@ -1,15 +1,17 @@
 package es;
 
 
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -49,13 +51,16 @@ public class EsTest {
             //输出结果
             //System.out.println(response.getSource());
 
-            String indexName = "pointdata";
+            //String indexName = "pointdata";
+            String indexName = "wind01";
             //创建索引
             //createIndex(indexName);
             //删除索引
             //deleteIndex(indexName);
             //添加数据
             //createDate(indexName);
+            //添加mapping
+            createMapping(indexName);
             //修改数据
             //updateDate(indexName);
             //查询数据
@@ -70,7 +75,7 @@ public class EsTest {
             //EsQuery.matchQuery(client,indexName);
             //term查询；精确匹配
             //注：汉字被拆分成一个字，英文的话每一个空格代表一个单词相隔
-            //EsQuery.termQuery(client, indexName);
+            EsQuery.termQuery(client, indexName);
             //多字段精确匹配
             //EsQuery.termsQuerys(client, indexName);
             //范围查询
@@ -88,13 +93,43 @@ public class EsTest {
             //模糊查询
             //EsQuery.fuzzyQuery(client, indexName);
             //多条件查询
-            EsQuery.multiSearchResponse(client, indexName);
+            //EsQuery.multiSearchResponse(client, indexName);
 
             //关闭client
             client.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    /**
+     * 创建索引
+     */
+    public static void createIndexNameNew(String indices){
+        client.admin().indices().prepareCreate(indices).execute().actionGet();
+    }
+
+    /**
+     * 创建mapping
+     */
+    public static void createMapping(String indices)throws Exception{
+        new XContentFactory();
+        XContentBuilder builder=XContentFactory.jsonBuilder()
+                .startObject()
+                .startObject("properties")
+                .startObject("type").field("type","string").field("store","yes").field("analyzer","ik_max_word")
+                .endObject()
+                .startObject("eventCount").field("type","long").field("store","yes")
+                .endObject()
+                .startObject("eventDate").field("type","date").field("format","dateOptionalTime")
+                .field("store","yes")
+                .endObject()
+                .startObject("message").field("type","string").field("index","not_analyzed")
+                .field("store","yes")
+                .endObject()
+                .endObject()
+                .endObject();
+        PutMappingRequest mapping = Requests.putMappingRequest(indices).type("iknew").source(builder);
+        client.admin().indices().putMapping(mapping).actionGet();
     }
 
     /**
@@ -148,12 +183,12 @@ public class EsTest {
      */
     public static void createDate(String indexName){
         Map<String,Object> map = new HashMap<String, Object>();
-        map.put("type", "明星");
+        map.put("type", "水浒传");
         map.put("eventCount", 1);
         map.put("eventDate", new Date()) ;
-        map.put("message", new String[]{"first","胡歌"});
+        map.put("message", new String[]{"first","宋江"});
         try {
-            IndexResponse response = client.prepareIndex(indexName, "star",UUID.randomUUID().toString().replaceAll("-",""))
+            IndexResponse response = client.prepareIndex(indexName, "iktest",UUID.randomUUID().toString().replaceAll("-",""))
                     .setSource(map).execute().actionGet();
             System.out.println("写入数据结果=" + response.status().getStatus() + "！id=" + response.getId());
         } catch (Exception e) {
@@ -161,6 +196,7 @@ public class EsTest {
             e.printStackTrace();
         }
     }
+
 
     /**
      * 创建索引
@@ -176,7 +212,7 @@ public class EsTest {
                     .endObject()*/
                     .startObject()
                         .startObject("properties")
-                            .startObject("type").field("type","string").field("store","yes")
+                            .startObject("type").field("type","string").field("store","yes").field("analyzer","ik_max_word")
                             .endObject()
                             .startObject("eventCount").field("type","long").field("store","yes")
                             .endObject()
@@ -186,11 +222,14 @@ public class EsTest {
                             .startObject("message").field("type","string").field("index","not_analyzed")
                                .field("store","yes")
                             .endObject()
-                         .endObject()
+                         /*  .startObject("english_name").field("type","string").field("analyzer","english")
+                           .endObject()*/
+                      .endObject()
                     .endObject();
             CreateIndexRequestBuilder  cib=client.admin()
-                    .indices().prepareCreate(indexName).addMapping(indexName, mapping);
+                    .indices().prepareCreate(indexName).addMapping("iktest", mapping);
             CreateIndexResponse response = cib.execute().actionGet();
+
 
             if(response.isAcknowledged()){
                 System.out.println("index.created");
