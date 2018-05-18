@@ -11,7 +11,29 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 
+/**
+ * 查询测试
+ */
 public class EsQuery {
+
+
+
+    /**
+     * bool
+     * @param client
+     * @param indexName
+     */
+    public static void  boolQuery(TransportClient client ,String indexName){
+          QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                  .must(QueryBuilders.termQuery("type", "红"))
+                  .mustNot(QueryBuilders.termQuery("type", "西")) //添加不得出现在匹配文档中的查询。
+                  .should(QueryBuilders.termQuery("type", "明"))//添加应该与返回的文档匹配的子句。 对于具有no的布尔查询,子句必须一个或多个SHOULD子句且必须与文档匹配,用于布尔值查询匹配。 不允许null值。
+                  .filter(QueryBuilders.termQuery("type", "红"));//添加一个查询，必须出现在匹配的文档中，但会不贡献得分。 不允许null值。
+        SearchResponse response = client.prepareSearch(indexName).setTypes("article").setQuery(queryBuilder).execute().actionGet();
+        for (SearchHit searchHit : response.getHits()) {
+            System.out.println(searchHit.getSource());
+        }
+    }
 
     /**
      * 查询该index下的所有数据
