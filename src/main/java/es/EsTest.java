@@ -6,6 +6,7 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
@@ -17,6 +18,9 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import util.CarCard;
+import util.IDCardNo;
+import util.RandomValue;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -51,16 +55,19 @@ public class EsTest {
             //输出结果
             //System.out.println(response.getSource());
 
-            //String indexName = "pointdata";
-            String indexName = "wind01";
+            String indexName = "car";
+            //String indexName = "wind02";
             //创建索引
             //createIndex(indexName);
+            //createIndexNameNew(indexName);
+            //添加mapping
+            //createMapping(indexName);
             //删除索引
             //deleteIndex(indexName);
+            //批量添加数据
+            createManyData(indexName);
             //添加数据
             //createDate(indexName);
-            //添加mapping
-            createMapping(indexName);
             //修改数据
             //updateDate(indexName);
             //查询数据
@@ -75,7 +82,7 @@ public class EsTest {
             //EsQuery.matchQuery(client,indexName);
             //term查询；精确匹配
             //注：汉字被拆分成一个字，英文的话每一个空格代表一个单词相隔
-            EsQuery.termQuery(client, indexName);
+            // EsQuery.termQuery(client, indexName);
             //多字段精确匹配
             //EsQuery.termsQuerys(client, indexName);
             //范围查询
@@ -94,7 +101,8 @@ public class EsTest {
             //EsQuery.fuzzyQuery(client, indexName);
             //多条件查询
             //EsQuery.multiSearchResponse(client, indexName);
-
+            //bool查询
+            //EsQuery.boolQuery(client, indexName);
             //关闭client
             client.close();
         } catch (Exception e) {
@@ -116,20 +124,50 @@ public class EsTest {
         XContentBuilder builder=XContentFactory.jsonBuilder()
                 .startObject()
                 .startObject("properties")
-                .startObject("type").field("type","string").field("store","yes").field("analyzer","ik_max_word")
+                .startObject("plateNum").field("type","string").field("store","yes").field("analyzer","ik_max_word")
                 .endObject()
-                .startObject("eventCount").field("type","long").field("store","yes")
+                .startObject("owner").field("type","string").field("store","yes").field("index","not_analyzed")
                 .endObject()
-                .startObject("eventDate").field("type","date").field("format","dateOptionalTime")
+                .startObject("phone").field("type","string")
                 .field("store","yes")
                 .endObject()
-                .startObject("message").field("type","string").field("index","not_analyzed")
+                .startObject("IDCard").field("type","string")
                 .field("store","yes")
                 .endObject()
                 .endObject()
                 .endObject();
-        PutMappingRequest mapping = Requests.putMappingRequest(indices).type("iknew").source(builder);
+        PutMappingRequest mapping = Requests.putMappingRequest(indices).type("cartest").source(builder);
         client.admin().indices().putMapping(mapping).actionGet();
+    }
+
+    /**
+     * 批量添加数据
+     * @param indexName
+     */
+    public static void createManyData(String indexName){
+        long start = System.currentTimeMillis();
+        System.out.println(start);
+        int count = 1000000;
+        String type = "cartest";
+        BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
+        Map<String, Object> map = new HashMap<String, Object>();
+        for(int i = 0;i <= count;i++){
+            String carNum =  CarCard.getCarNum();
+            String name = RandomValue.getChineseName();
+            String phone = RandomValue.getTel();
+            String idCard = IDCardNo.getRandomID();
+            map.put("plateNum", carNum);
+            map.put("owner", name);
+            map.put("phone", phone);
+            map.put("IDCard", idCard);
+            bulkRequestBuilder.add(client.prepareIndex(indexName, type, UUID.randomUUID().toString().replaceAll("-","")).setSource(map));
+            if(i%500000 ==0){
+                bulkRequestBuilder.execute().actionGet();
+                long end = System.currentTimeMillis();
+                System.out.println(end-start);
+                start = end;
+            }
+        }
     }
 
     /**
@@ -182,18 +220,24 @@ public class EsTest {
      * @param indexName
      */
     public static void createDate(String indexName){
-        Map<String,Object> map = new HashMap<String, Object>();
-        map.put("type", "水浒传");
-        map.put("eventCount", 1);
-        map.put("eventDate", new Date()) ;
-        map.put("message", new String[]{"first","宋江"});
-        try {
-            IndexResponse response = client.prepareIndex(indexName, "iktest",UUID.randomUUID().toString().replaceAll("-",""))
-                    .setSource(map).execute().actionGet();
-            System.out.println("写入数据结果=" + response.status().getStatus() + "！id=" + response.getId());
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
+        IDCardNo idCardNo = new IDCardNo();
+        for (int i = 0; i<100000; i++){
+            Map<String,Object> map = new HashMap<String, Object>();
+            map.put("plateNum", CarCard.getCarNum());
+            map.put("owner", RandomValue.getChineseName());
+            map.put("phone", RandomValue.getTel()) ;
+            map.put("IDCard", idCardNo.getRandomID());
+            try {
+                IndexResponse response = client.prepareIndex(indexName, "cartest",UUID.randomUUID().toString().replaceAll("-",""))
+                        .setSource(map).execute().actionGet();
+                if(i%1000 == 0){
+                    System.out.println("写入数据结果=" + response.status().getStatus() + "！1000条" );
+                }
+
+            } catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+            }
         }
     }
 
